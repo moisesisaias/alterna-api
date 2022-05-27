@@ -1,8 +1,18 @@
 const logger = require("./winston");
 const crypto = require("crypto");
 const express = require("express");
+const pg = require("pg");
 
 const alternaApi = express();
+
+const Pool = pg.Pool;
+const pool = new Pool({
+  user: "alterna_user",
+  password: "67890",
+  host: "localhost",
+  port: 5432,
+  database: "alterna",
+});
 
 alternaApi.use(express.json());
 
@@ -113,15 +123,47 @@ alternaApi.get("/api/students", (request, response) => {
 
   if (!!id) {
     logger.debug(id);
-    const studentIndex = getStudentIndexById(id);
-    if (studentIndex >= 0) {
-      response.json(database.students[studentIndex]);
-    } else {
-      logger.error("Could not find student with id: " + id);
-      studentNotFoundResponse(response);
-    }
+
+    // var student;
+    // id = '2 or id is not null'
+    pool.query(
+      "select * from students where id = $1",
+      [id],
+      (error, results) => {
+        if (error) {
+          logger.error("some sql error");
+          throw error;
+        }
+
+        if (!results.rows || !results.rows[0]) {
+          logger.error("Could not find student with id: " + id);
+          studentNotFoundResponse(response);
+          return;
+        } else {
+          response.json(results.rows);
+        }
+        // student = !!results.rows && !!results.rows[0] ? results.rows[0] : {};
+        // response.json(!!results.rows && !!results.rows[0] ? results.rows[0] : {});
+      }
+    );
+    // response.json(student);
+
+    // const studentIndex = getStudentIndexById(id);
+    // if (studentIndex >= 0) {
+    // const student = database.students[getStudentIndexById(id)];
+    // response.json(student);
+    // } else {
+    //   logger.error("Could not find student with id: " + id);
+    //   studentNotFoundResponse(response);
+    // }
   } else {
-    response.json(database.students);
+    // const students = database.students;
+    pool.query("select * from students order by id asc", (error, results) => {
+      if (error) {
+        throw error;
+      }
+      response.json(results.rows);
+    });
   }
 });
 
@@ -133,19 +175,34 @@ alternaApi.post("/api/students", (request, response) => {
     return;
   }
 
-  const newId = getNextStudentId();
+  // const newId = getNextStudentId();
 
   // copy student fields
-  const newStudent = {
-    id: newId,
-    firstname: input.firstname,
-    lastname: input.lastname,
-    age: input.age,
-  };
+  // const newStudent = {
+  //   id: newId,
+  //   firstname: input.firstname,
+  //   lastname: input.lastname,
+  //   age: input.age,
+  // };
 
-  database.students.push(newStudent);
+  // database.students.push(newStudent);
 
-  response.json(newStudent);
+  var newStudent = new Student(firstname, lastname, age);
+  newStudent.save();
+
+  pool.query(
+    "insert into students (firstname, lastname, age) values ($1, $2, $3)",
+    [input.firstname, input.lastname, input.age],
+    (error, results) => {
+      if (error) {
+        throw error;
+      }
+      const studentId = results.insertId;
+      response.status(201).json("Student created, id=" + studentId);
+    }
+  );
+
+  // response.json(newStudent);
 });
 
 alternaApi.put("/api/students", (request, response) => {
@@ -154,30 +211,51 @@ alternaApi.put("/api/students", (request, response) => {
 
   const id = request.body.id;
   if (!!id) {
-    index = getStudentIndexById(id);
-    if (index >= 0) {
-      database.students[index] = updatedStudent;
-    } else {
-      studentNotFoundResponse(response);
-      return;
-    }
+    // index = getStudentIndexById(id);
+    // if (index >= 0) {
+    //   database.students[index] = updatedStudent;
+    // } else {
+    //   studentNotFoundResponse(response);
+    //   return;
+    // }
+
+    pool.query(
+      "update students set firstname = $1, lastname = $2, age = $3 where id = $4",
+      [
+        updatedStudent.firstname,
+        updatedStudent.lastname,
+        updatedStudent.age,
+        updatedStudent.id,
+      ],
+      (error, results) => {
+        if (error) {
+          throw error;
+        }
+        response.json("Student with id=" + id + " updated successfully.");
+      }
+    );
   } else {
     logger.warn("Invalid input object: " + JSON.stringify(input));
     badRequestResponse("Expected student id in body object.");
     return;
   }
 
-  response.json(database.students[index]);
+  // response.json(database.students[index]);
 });
 
 alternaApi.delete("/api/students", (request, response) => {
   const id = request.query.id;
 
   if (!!id) {
-    const index = getStudentIndexById(id);
-    if (index >= 0) {
-      database.students.splice(index, 1);
-    }
+    // const index = getStudentIndexById(id);
+    // if (index >= 0) {
+    //   database.students.splice(getStudentIndexById(id), 1);
+    // }
+    pool.query("delete from students where id = $1", [id], (error, results) => {
+      if (error) {
+        throw error;
+      }
+    });
   } else {
     logger.warn("Could not find user id " + id + " to delete");
   }
