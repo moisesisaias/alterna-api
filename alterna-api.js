@@ -206,7 +206,7 @@ alternaApi.get("/api/operation2/:name", (request, response) => {
 alternaApi.get("/api/operation3", (request, response) => {
   AFP_RATE = 0.0287;
   SFS_RATE = 0.0304;
-  var inputSalary = request.query.dopSalary || 0;
+  let inputSalary = request.query.salary || 0;
   let netSalary = "Not calculated";
   let sfsCalc = 0;
   let afpCalc = 0;
@@ -219,10 +219,7 @@ alternaApi.get("/api/operation3", (request, response) => {
     sfsCalc = (salaryAsNumber * SFS_RATE).toFixed(2);
     afpCalc = (salaryAsNumber * AFP_RATE).toFixed(2);
 
-    if (isNaN(extraDeduction)) {
-      extraDeduction = 0;
-    }
-    netSalary = salaryAsNumber - sfsCalc - afpCalc - Number(extraDeduction);
+    netSalary = salaryAsNumber - sfsCalc - afpCalc;
 
     var annualSalary = netSalary * 12;
     const ratesByAnnualSalary = [
@@ -230,46 +227,20 @@ alternaApi.get("/api/operation3", (request, response) => {
       { exemptSalary: 624329, taxRate: 0.2 },
       { exemptSalary: 416220, taxRate: 0.15 },
     ];
-    // let from3 = 867123;
-    // let taxRate3 = 0.25;
-    // let from2 = 624329;
-    // let taxRate2 = 0.2;
-    // let from1 = 416220;
-    // let taxRate1 = 0.15;
+
     for (let index = 0; index < ratesByAnnualSalary.length; index++) {
-      const data = array[index];
+      const data = ratesByAnnualSalary[index];
       if (annualSalary > data.exemptSalary) {
-        let diff = annualSalary - data.salary;
-        totalIncomeTax += (diff / 12) * taxRate3;
-        annualSalary -= diff;
+        let taxableSalary = annualSalary - data.exemptSalary;
+        totalIncomeTax += (taxableSalary / 12) * data.taxRate;
+        annualSalary -= taxableSalary;
       }
     }
-
-    // if (annualSalary > from3)
-    // {
-    //     let diff = annualSalary - from3;
-    //     totalIncomeTax += (diff/12) * taxRate3;
-    //     annualSalary -= diff;
-    // }
-
-    // if (annualSalary > from2)
-    // {
-    //     let diff = annualSalary - from2;
-    //     totalIncomeTax += (diff/12) * taxRate2;
-    //     annualSalary -= diff;
-    // }
-
-    // if (annualSalary > from1)
-    // {
-    //     let diff = annualSalary - from1;
-    //     totalIncomeTax += (diff/12) * taxRate1;
-    //     annualSalary -= diff;
-    // }
 
     netSalary = (netSalary - totalIncomeTax).toFixed(2);
   }
 
-  response.send("" + age);
+  response.send({netSalary, SFSTax: sfsCalc, AFPTax: afpCalc, totalIncomeTax});
 });
 
 alternaApi.listen(8080, () => logger.info("Alterna Api is running!"));
