@@ -113,14 +113,10 @@ alternaApi.get("/api/students", (request, response) => {
   if (!!id) {
     logger.debug(id);
 
-    // var student;
-    // id = '2 or id is not null'
-    // response.json(student);
-
     const studentIndex = getStudentIndexById(id);
     if (studentIndex >= 0) {
-    const student = database.students[getStudentIndexById(id)];
-    response.json(student);
+      const student = database.students[getStudentIndexById(id)];
+      response.json(student);
     } else {
       logger.error("Could not find student with id: " + id);
       studentNotFoundResponse(response);
@@ -205,6 +201,75 @@ alternaApi.get("/api/operation1", (request, response) => {
 alternaApi.get("/api/operation2/:name", (request, response) => {
   var age = request.query.age || 50;
   response.send("My name is " + request.paramss.name + " and my age is " + age);
+});
+
+alternaApi.get("/api/operation3", (request, response) => {
+  AFP_RATE = 0.0287;
+  SFS_RATE = 0.0304;
+  var inputSalary = request.query.dopSalary || 0;
+  let netSalary = "Not calculated";
+  let sfsCalc = 0;
+  let afpCalc = 0;
+  let totalIncomeTax = 0;
+
+  if (isNaN(inputSalary) || inputSalary == null) {
+    netSalary = "invalid value";
+  } else {
+    let salaryAsNumber = Number(inputSalary);
+    sfsCalc = (salaryAsNumber * SFS_RATE).toFixed(2);
+    afpCalc = (salaryAsNumber * AFP_RATE).toFixed(2);
+
+    if (isNaN(extraDeduction)) {
+      extraDeduction = 0;
+    }
+    netSalary = salaryAsNumber - sfsCalc - afpCalc - Number(extraDeduction);
+
+    var annualSalary = netSalary * 12;
+    const ratesByAnnualSalary = [
+      { exemptSalary: 867123, taxRate: 0.25 },
+      { exemptSalary: 624329, taxRate: 0.2 },
+      { exemptSalary: 416220, taxRate: 0.15 },
+    ];
+    // let from3 = 867123;
+    // let taxRate3 = 0.25;
+    // let from2 = 624329;
+    // let taxRate2 = 0.2;
+    // let from1 = 416220;
+    // let taxRate1 = 0.15;
+    for (let index = 0; index < ratesByAnnualSalary.length; index++) {
+      const data = array[index];
+      if (annualSalary > data.exemptSalary) {
+        let diff = annualSalary - data.salary;
+        totalIncomeTax += (diff / 12) * taxRate3;
+        annualSalary -= diff;
+      }
+    }
+
+    // if (annualSalary > from3)
+    // {
+    //     let diff = annualSalary - from3;
+    //     totalIncomeTax += (diff/12) * taxRate3;
+    //     annualSalary -= diff;
+    // }
+
+    // if (annualSalary > from2)
+    // {
+    //     let diff = annualSalary - from2;
+    //     totalIncomeTax += (diff/12) * taxRate2;
+    //     annualSalary -= diff;
+    // }
+
+    // if (annualSalary > from1)
+    // {
+    //     let diff = annualSalary - from1;
+    //     totalIncomeTax += (diff/12) * taxRate1;
+    //     annualSalary -= diff;
+    // }
+
+    netSalary = (netSalary - totalIncomeTax).toFixed(2);
+  }
+
+  response.send("" + age);
 });
 
 alternaApi.listen(8080, () => logger.info("Alterna Api is running!"));
