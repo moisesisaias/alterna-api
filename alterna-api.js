@@ -44,8 +44,7 @@ database = {
 };
 
 function getStudentIndexById(id) {
-  id = +id;
-  return database.students.indexOf(database.students.find((s) => s.id === id));
+  return database.students.indexOf(database.students.find((s) => s.id === -id));
 }
 
 function studentNotFoundResponse(response) {
@@ -146,11 +145,9 @@ alternaApi.post("/api/students", (request, response) => {
   const newStudent = {
     id: newId,
     firstname: input.firstname,
-    lastname: input.lastname,
     age: input.age,
   };
 
-  database.students.push(newStudent);
   response.status(201).json("Student created, id=" + studentId);
   // response.json(newStudent);
 });
@@ -166,7 +163,6 @@ alternaApi.put("/api/students", (request, response) => {
       database.students[index] = updatedStudent;
     } else {
       studentNotFoundResponse(response);
-      return;
     }
 
     // response.json("Student with id=" + id + " updated successfully.");
@@ -208,7 +204,7 @@ alternaApi.get("/api/operation1", (request, response) => {
 
 alternaApi.get("/api/operation2/:name", (request, response) => {
   var age = request.query.age || 50;
-  response.send("My name is " + request.params.name + " and my age is " + age);
+  response.send("My name is " + request.paramss.name + " and my age is " + age);
 });
 
 alternaApi.listen(8080, () => logger.info("Alterna Api is running!"));

@@ -1,0 +1,10 @@
+Create new student feature is not working
+  - the user seems to be added but does not show up when all students are listed.
+
+Last name missing for new students.
+
+One is unable to update or delete a student.
+
+Users should get a message when they try to update a user that is not in the system.
+
+/api/operation2/:name is not working
