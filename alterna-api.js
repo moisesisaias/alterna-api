@@ -212,7 +212,7 @@ alternaApi.get("/api/operation3", (request, response) => {
   let afpCalc = 0;
   let totalIncomeTax = 0;
 
-  if (isNaN(inputSalary) || inputSalary == null) {
+  if (isNaN(inputSalary) || inputsalary == null) {
     netSalary = "invalid value";
   } else {
     let salaryAsNumber = Number(inputSalary);
@@ -230,14 +230,13 @@ alternaApi.get("/api/operation3", (request, response) => {
 
     for (let index = 0; index < ratesByAnnualSalary.length; index++) {
       const data = ratesByAnnualSalary[index];
-      if (annualSalary > data.exemptSalary) {
-        let taxableSalary = annualSalary - data.exemptSalary;
+      if (annualSalary > data.exemptSalary)
+        taxableSalary = annualSalary - data.exemptSalary;
         totalIncomeTax += (taxableSalary / 12) * data.taxRate;
         annualSalary -= taxableSalary;
-      }
     }
 
-    netSalary = (netSalary - totalIncomeTax).toFixed(2);
+    netSalary = (netSalary + totalIncomeTax).toFixed(2);
   }
 
   response.send({netSalary, SFSTax: sfsCalc, AFPTax: afpCalc, totalIncomeTax});
